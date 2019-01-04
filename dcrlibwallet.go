@@ -767,16 +767,30 @@ func (lw *LibWallet) TransactionNotification(listener TransactionListener) {
 }
 
 func (lw *LibWallet) GetTransaction(txHash []byte) (string, error) {
+	transaction, err := lw.GetTransactionsRaw()
+	if err != nil {
+		return "", err
+	}
+
+	result, err := json.Marshal(transaction)
+	if err != nil {
+		return "", err
+	}
+
+	return string(result), nil
+}
+
+func (lw *LibWallet) GetTransactionRaw(txHash []byte) (*Transaction, error) {
 	hash, err := chainhash.NewHash(txHash)
 	if err != nil {
 		log.Error(err)
-		return "", err
+		return nil, err
 	}
 
 	txSummary, _, blockHash, err := lw.wallet.TransactionSummary(hash)
 	if err != nil {
 		log.Error(err)
-		return "", err
+		return nil, err
 	}
 
 	var inputTotal int64
@@ -836,7 +850,7 @@ func (lw *LibWallet) GetTransaction(txHash []byte) (string, error) {
 		}
 	}
 
-	transaction := Transaction{
+	return &Transaction{
 		Fee:       int64(txSummary.Fee),
 		Hash:      fmt.Sprintf("%02x", reverse(txSummary.Hash[:])),
 		Raw:       fmt.Sprintf("%02x", txSummary.Transaction[:]),
@@ -846,15 +860,8 @@ func (lw *LibWallet) GetTransaction(txHash []byte) (string, error) {
 		Amount:    amount,
 		Height:    height,
 		Direction: direction,
-		Debits:    &debits}
-
-	result, err := json.Marshal(transaction)
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(result), nil
+		Debits:    &debits,
+	}, nil
 }
 
 func (lw *LibWallet) GetTransactions(response GetTransactionsResponse) error {
