@@ -956,17 +956,7 @@ func (lw *LibWallet) DecodeTransaction(txHash []byte) (string, error) {
 		return "", err
 	}
 
-	// func to attempt to check if an address belongs to the wallet to retrieve it's account name or return external if not
-	getWalletAddressInfo := func(address string) *txhelper.AddressInfo {
-		addressInfo, err := lw.AddressInfo(address)
-		if err != "" {
-			return &txhelper.AddressInfo{
-				Address: address,
-			}
-		}
-		return addressInfo
-	}
-	tx, err := txhelper.DecodeTransaction(hash, txSummary.Transaction, lw.wallet.ChainParams(), getWalletAddressInfo)
+	tx, err := txhelper.DecodeTransaction(hash, txSummary.Transaction, lw.wallet.ChainParams(), lw.AddressInfo)
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -1390,11 +1380,11 @@ func (lw *LibWallet) AccountOfAddress(address string) string {
 	return lw.AccountName(info.Account())
 }
 
-func (lw *LibWallet) AddressInfo(address string) (*txhelper.AddressInfo, string) {
+func (lw *LibWallet) AddressInfo(address string) (*txhelper.AddressInfo, error) {
 	addr, err := dcrutil.DecodeAddress(address)
 	if err != nil {
 		log.Error(err)
-		return nil, "Account decode error"
+		return nil, err
 	}
 
 	addressInfo := &txhelper.AddressInfo{
@@ -1408,7 +1398,7 @@ func (lw *LibWallet) AddressInfo(address string) (*txhelper.AddressInfo, string)
 		addressInfo.AccountName = lw.AccountName(info.Account())
 	}
 
-	return addressInfo, ""
+	return addressInfo, nil
 }
 
 func (lw *LibWallet) CurrentAddress(account int32) (string, error) {
