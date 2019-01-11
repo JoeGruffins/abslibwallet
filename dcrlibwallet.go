@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/raedahgroup/dcrlibwallet/util"
 	"math"
 	"net"
 	"os"
@@ -58,13 +59,10 @@ type LibWallet struct {
 	rescannning   bool
 }
 
-func NewLibWallet(homeDir string, dbDriver string, netType string) *LibWallet {
-	var activeNet *netparams.Params
-
-	if netType == "mainnet" {
-		activeNet = &netparams.MainNetParams
-	} else {
-		activeNet = &netparams.TestNet3Params
+func NewLibWallet(homeDir string, dbDriver string, netType string) (*LibWallet, error) {
+	activeNet := util.NetParams(netType)
+	if activeNet == nil {
+		return nil, fmt.Errorf("Unsupported network type: %s", netType)
 	}
 
 	lw := &LibWallet{
@@ -74,7 +72,7 @@ func NewLibWallet(homeDir string, dbDriver string, netType string) *LibWallet {
 	}
 	errors.Separator = ":: "
 	initLogRotator(filepath.Join(homeDir, "/logs/"+netType+"/dcrwallet.log"))
-	return lw
+	return lw, nil
 }
 
 func (lw *LibWallet) SetLogLevel(loglevel string) {
